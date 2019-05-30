@@ -101,10 +101,8 @@ static int fill(input_t *in, size_t need)
 
 static int lex(input_t *in, long *count)
 {
-	unsigned char
-		*s1, *u1, *h1, *h3, *h5, *r1, *p1, *p3, *q1, *f1,
-		*s2, *u2, *h2, *h4, *h6, *r2, *p2, *p4, *q2, *f2,
-	 *email_before_at_start, *email_before_at_end, *email_after_at_start, *email_after_at_end, *email_after_dot_start, *email_after_dot_end;
+	unsigned char *email_before_at_start, *email_before_at_end, *email_after_at_start,
+	*email_after_at_end, *email_after_dot_start, *email_after_dot_end;
 loop:
 	in->tok = in->cur;
 	/* TODO: DATE, I'm => I am, email,url, tags, cmd arguments */
@@ -203,8 +201,8 @@ Cn = [\u0378-\u0379\u0380-\u0383\u038b-\u038b\u038d-\u038d\u03a2-\u03a2\u0530-\u
 	sub_delims  = [!$&'()*+,;=];
 	pchar	   = unreserved | pct_encoded | sub_delims | [:@];
 
-	scheme = @s1 alpha (alpha | digit | [-+.])* @s2;
-	userinfo = @u1 (unreserved | pct_encoded | sub_delims | ":")* @u2;
+	scheme = alpha (alpha | digit | [-+.])*;
+	userinfo = (unreserved | pct_encoded | sub_delims | ":")*;
 	dec_octet
 		= digit
 		| [\x31-\x39] digit
@@ -228,20 +226,20 @@ Cn = [\u0378-\u0379\u0380-\u0383\u038b-\u038b\u038d-\u038d\u03a2-\u03a2\u0530-\u
 	ip_literal  = "[" ( ipv6address | ipvfuture ) "]";
 	reg_name	= (unreserved | pct_encoded | sub_delims)+;
 	host
-		= @h1 ip_literal  @h2
-		| @h3 ipv4address @h4
-		| @h5 reg_name	@h6;
-	port	  = @r1 digit* @r2;
+		= ip_literal
+		| ipv4address
+		| reg_name;
+	port	  = digit*;
 	authority = (userinfo "@")? host (":" port)?;
 	path_abempty  = ("/" pchar*)*;
 	path_absolute = "/" (pchar+ ("/" pchar*)*)?;
 	//path_rootless = pchar+ ("/" pchar*)*;
 	//path_empty	= "";
 	hier_part
-		= "//" authority @p1 path_abempty @p2
-		| @p3 (path_absolute /*| path_rootless | path_empty*/) @p4;
-	query	= @q1 (pchar | [/?])* @q2;
-	fragment = @f1 (pchar | [/?])* @f2;
+		= "//" authority path_abempty
+		| (path_absolute /*| path_rootless | path_empty*/);
+	query	= (pchar | [/?])*;
+	fragment = (pchar | [/?])*;
 	uri = scheme ":" hier_part ("?" query)? ("#" fragment)?;
 	//URI END
 
@@ -385,7 +383,8 @@ void update_flags(char *s)
 
 void parse_flags(char *s)
 {
-	char p[16],idx = 0,c;
+	char p[16],c;
+	int idx = 0;
 	flags = 0;
 	while((c = *s++) != 0){
 		if(c == ','){
@@ -407,8 +406,8 @@ void help(char **argv)
 	printf("%s: [OPTIONS] [INPUT_FILES]\n"
 	"\t\t-a type1,type2,... accept only token types\n"
 	"\t\t-r type1,type2,... reject token types\n"
-	// "\t\t-w                 count words\n"
-	"valid token types: word,email,punct,greek,uri,num,date,sym,other\n",argv[0]);
+	"\t\t-w                 count words\n"
+	"valid token types: word,email,punct\n",argv[0]);
 }
 
 int main(int argc, char **argv)
