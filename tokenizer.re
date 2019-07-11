@@ -33,6 +33,7 @@ void error(const char *format,...)
 	va_start(args, format);
 	vfprintf(stderr,format, args);
 	va_end (args);
+	fputc('\n',stderr);
 	exit(EXIT_FAILURE);
 }
 
@@ -103,6 +104,7 @@ static int lex(input_t *in, long *count)
 {
 	unsigned char *email_before_at_start, *email_before_at_end, *email_after_at_start,
 	*email_after_at_end, *email_after_dot_start, *email_after_dot_end;
+	unsigned char *wsplit1, *wsplit2, *wsplit3 , *wsplit4;
 loop:
 	in->tok = in->cur;
 	/* TODO: DATE, I'm => I am, email,url, tags, cmd arguments */
@@ -161,8 +163,8 @@ Cn = [\u0378-\u0379\u0380-\u0383\u038b-\u038b\u038d-\u038d\u03a2-\u03a2\u0530-\u
  
 /*!re2c /* */
 	end = "\x00";
-	eol = "\n";
-
+	newline = "\n" | "\r\n" | "\r";
+	
 	alpha	   = [a-zA-Z];
 	greek_upper = [ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩΆΈΉΊΌΎΏΫΪ];
 	greek_lower = [αβγδεζηθικλμνξοπρστυφχψωςάέήίόύώΐΰϋϊἱ];
@@ -183,13 +185,17 @@ Cn = [\u0378-\u0379\u0380-\u0383\u038b-\u038b\u038d-\u038d\u03a2-\u03a2\u0530-\u
 
 	// TODO EASTERN
 	word = letter+;
+	word_split = @wsplit1 letter+ @wsplit2 "-" newline @wsplit3 letter+ @wsplit4;
 	
 	dec_num = (digit | "." | ",")* digit "%"?;
 	hex_num = (hexdigit | "." | ",")* hexdigit "%"?;
 	price = (dec_num " "* currency) | (currency " "* dec_num);
 	ancient_greek_word = (greek_alphabet | ancient_greek_chars)+;
 	greek_order = digit+ ("ος" | "ης" | "η" | "ο"); // ος ης η ο
-	greek_word =  (greek_alphabet ".")+ | greek_alphabet+ | "ό,τι" | "Ό,τι" | greek_order | ekthlipsi;
+	greek_word =  (greek_alphabet ".")+ | greek_alphabet+
+	 | "ό,τι" | "Ό,τι" | greek_order | ekthlipsi;
+	greek_word_split =
+	 @wsplit1 greek_alphabet+ @wsplit2 "-" newline @wsplit3 greek_alphabet+ @wsplit4;
 	
 	number = N+ | dec_num;
 	
@@ -302,6 +308,22 @@ Cn = [\u0378-\u0379\u0380-\u0383\u038b-\u038b\u038d-\u038d\u03a2-\u03a2\u0530-\u
 	greek_word {
 		if(BIT_SET(flags,BIT_WORD) || BIT_SET(flags,BIT_GREEK)){
 			OUTPUT_TOKEN(in->tok,in->cur);
+			putchar_unlocked('\n');
+		}
+		goto loop;
+	}
+	greek_word_split {
+		if(BIT_SET(flags,BIT_WORD) || BIT_SET(flags,BIT_GREEK)){
+			OUTPUT_TOKEN(wsplit1,wsplit2);
+			OUTPUT_TOKEN(wsplit3,wsplit4);
+			putchar_unlocked('\n');
+		}
+		goto loop;
+	}
+	word_split {
+		if(BIT_SET(flags,BIT_WORD)){
+			OUTPUT_TOKEN(wsplit1,wsplit2);
+			OUTPUT_TOKEN(wsplit3,wsplit4);
 			putchar_unlocked('\n');
 		}
 		goto loop;
