@@ -20,6 +20,7 @@
 #define BIT_OTHER 10
 
 #define BIT_SET(value,bit) ((int32_t)((value) << (31-bit)) < 0)
+#define PUT_CHAR(ch) if(count_words != 1) putchar_unlocked(ch);
 
 /*!max:re2c*/
 #define SIZE 8192
@@ -94,13 +95,14 @@ static int fill(input_t *in, size_t need)
 }
 
 #define OUTPUT_TOKEN(start,end) do {\
-		for(unsigned char *i = start;i < end;i++)\
-			putchar_unlocked(*i);\
+		if(count_words != 1)\
+			for(unsigned char *i = start;i < end;i++)\
+				putchar_unlocked(*i);\
 	}while(0);
 
 
 
-static int lex(input_t *in, long *count)
+static int lex(input_t *in, long long *count)
 {
 	unsigned char *email_before_at_start, *email_before_at_end, *email_after_at_start,
 	*email_after_at_end, *email_after_dot_start, *email_after_dot_end;
@@ -172,7 +174,7 @@ Cn = [\u0378-\u0379\u0380-\u0383\u038b-\u038b\u038d-\u038d\u03a2-\u03a2\u0530-\u
 	ekthlipsi_words = ("τ" | "θ" | "μ" | "σ" | "απ" | "γι" | "μεσ");
 	ekthlipsi = ekthlipsi_words ("'" | "’"  | "΄" | "᾽");
 	greek_alphabet = greek_upper | greek_lower;
-	ancient_greek_chars = [\u1F00-\u1FEF];
+	ancient_greek_chars = [\u1F00-\u1FFF];
 	digit	  = [0-9];
 	hexdigit   = [0-9a-fA-F];
 	pavles	 = [\u002D\u2010\u2011];
@@ -183,9 +185,8 @@ Cn = [\u0378-\u0379\u0380-\u0383\u038b-\u038b\u038d-\u038d\u03a2-\u03a2\u0530-\u
 	whitespace = Z | Cc;
 	emoticon = ":‑)" | ":)" | ":‑D" | ":D" | "xD" | "XD" | ":‑(" | ":(" | ":\'‑(" | ":\'‑(" | ":\'(" | ":\'‑)" | ":\')" | ";)" | ";‑)" | ":‑P" | ":P" | ":p" | ":-p" | ":‑/" | ":/" | "<3" | "</3" | "<\\3";
 
-	// TODO EASTERN
 	word = letter+;
-	word_split = @wsplit1 letter+ @wsplit2 "-" newline @wsplit3 letter+ @wsplit4;
+	word_split = @wsplit1 letter+ @wsplit2 "-" " "* newline @wsplit3 letter+ @wsplit4;
 	
 	dec_num = (digit | "." | ",")* digit "%"?;
 	hex_num = (hexdigit | "." | ",")* hexdigit "%"?;
@@ -280,79 +281,88 @@ Cn = [\u0378-\u0379\u0380-\u0383\u038b-\u038b\u038d-\u038d\u03a2-\u03a2\u0530-\u
 	date {
 		if(BIT_SET(flags,BIT_DATE)){
 			OUTPUT_TOKEN(in->tok,in->cur);
-			putchar_unlocked('\n');
+			PUT_CHAR('\n');
 		}
+		(*count)++;
 		goto loop;
 	}
 	time {
 		if(BIT_SET(flags,BIT_TIME)){
 			OUTPUT_TOKEN(in->tok,in->cur);
-			putchar_unlocked('\n');
+			PUT_CHAR('\n');
 		}
+		(*count)++;
 		goto loop;
 	}
 	price {
 		if(BIT_SET(flags,BIT_PRICE)){
 			OUTPUT_TOKEN(in->tok,in->cur);
-			putchar_unlocked('\n');
+			PUT_CHAR('\n');
 		}
+		(*count)++;
 		goto loop;
 	}
 	uri {
 		if(BIT_SET(flags,BIT_URI)){
 			OUTPUT_TOKEN(in->tok,in->cur);
-			putchar_unlocked('\n');
+			PUT_CHAR('\n');
 		}
+		(*count)++;
 		goto loop;
 	}
 	greek_word {
 		if(BIT_SET(flags,BIT_WORD) || BIT_SET(flags,BIT_GREEK)){
 			OUTPUT_TOKEN(in->tok,in->cur);
-			putchar_unlocked('\n');
+			PUT_CHAR('\n');
 		}
+		(*count)++;
 		goto loop;
 	}
 	greek_word_split {
 		if(BIT_SET(flags,BIT_WORD) || BIT_SET(flags,BIT_GREEK)){
 			OUTPUT_TOKEN(wsplit1,wsplit2);
 			OUTPUT_TOKEN(wsplit3,wsplit4);
-			putchar_unlocked('\n');
+			PUT_CHAR('\n');
 		}
+		(*count)++;
 		goto loop;
 	}
 	word_split {
 		if(BIT_SET(flags,BIT_WORD)){
 			OUTPUT_TOKEN(wsplit1,wsplit2);
 			OUTPUT_TOKEN(wsplit3,wsplit4);
-			putchar_unlocked('\n');
+			PUT_CHAR('\n');
 		}
+		(*count)++;
 		goto loop;
 	}
 	word {
 		if(BIT_SET(flags,BIT_WORD)){
 			OUTPUT_TOKEN(in->tok,in->cur);
-			putchar_unlocked('\n');
+			PUT_CHAR('\n');
 		}
+		(*count)++;
 		goto loop;
 	}
 	number {
 		if(BIT_SET(flags,BIT_NUM)){
 			OUTPUT_TOKEN(in->tok,in->cur);
-			putchar_unlocked('\n');
+			PUT_CHAR('\n');
 		}
+		(*count)++;
 		goto loop;
 	}
 	punct {
 		if(BIT_SET(flags,BIT_PUNCT)){
 			OUTPUT_TOKEN(in->tok,in->cur);
-			putchar_unlocked('\n');
+			PUT_CHAR('\n');
 		}
 		goto loop;
 	}
 	symbol {
 		if(BIT_SET(flags,BIT_SYM)){
 			OUTPUT_TOKEN(in->tok,in->cur);
-			putchar_unlocked('\n');
+			PUT_CHAR('\n');
 		}
 		goto loop;
 	}
@@ -360,19 +370,21 @@ Cn = [\u0378-\u0379\u0380-\u0383\u038b-\u038b\u038d-\u038d\u03a2-\u03a2\u0530-\u
    email {
 		if(BIT_SET(flags,BIT_EMAIL)){
 			OUTPUT_TOKEN(email_before_at_start,email_before_at_end);
-			putchar_unlocked('@');
+			PUT_CHAR('@');
 			OUTPUT_TOKEN(email_after_at_start,email_after_at_end);
-			putchar_unlocked('.');
+			PUT_CHAR('.');
 			OUTPUT_TOKEN(email_after_dot_start,email_after_dot_end);
-			putchar_unlocked('\n');
+			PUT_CHAR('\n');
 		}
+		(*count)++;
 		goto loop;
 	}
 	other /*| ("'s" / whitespace) | ("'re" / whitespace)*/{
 		if(BIT_SET(flags,BIT_OTHER)){
 			OUTPUT_TOKEN(in->tok,in->cur);
-			putchar_unlocked('\n');
+			PUT_CHAR('\n');
 		}
+		(*count)++;
 		goto loop;
 	}
 */
@@ -397,6 +409,8 @@ void update_flags(char *s)
 		flags |= 1 << BIT_URI;
 	else if(strcmp(s,"greek") == 0)
 		flags |= 1 << BIT_GREEK;
+	else if(strcmp(s,"price") == 0)
+		flags |= 1 << BIT_PRICE;
 	else if(strcmp(s,"other") == 0)
 		flags |= 1 << BIT_OTHER;
 	else
@@ -426,22 +440,16 @@ void parse_flags(char *s)
 void help(char **argv)
 {
 	printf("%s: [OPTIONS] [INPUT_FILES]\n"
-	"\t\t-a type1,type2,... accept only token types\n"
-	"\t\t-r type1,type2,... reject token types\n"
-	"\t\t-w                 count words\n"
-	"valid token types: word,email,punct\n",argv[0]);
+	"        -a type1,type2,... accept only token types\n"
+	"        -r type1,type2,... reject token types\n"
+	"        -w                 print word count\n"
+	"        -W                 print tokenization in stdout and word count in stderr\n" 
+	"valid token types: word, email, punct, num, date, symbol, uri, price, greek, other\n",argv[0]);
 }
 
 int main(int argc, char **argv)
 {
-	/* tool options input_files
-	options: -a accept only
-	
-		  -r reject
-		  -w count words
-	email,date,words,punct,uri,greek
-	*/
-	long count;
+	long long count = 0;
 	int idx;
 	input_t in;
 	char parsed_file = 0;
@@ -464,6 +472,8 @@ int main(int argc, char **argv)
 			}
 			else if(argv[idx][1] == 'w')
 				count_words = 1;
+			else if(argv[idx][1] == 'W')
+				count_words = 2;
 			else if(argv[idx][1] == 'h'){
 				help(argv);
 				return 0;
@@ -483,6 +493,11 @@ int main(int argc, char **argv)
 			lex(&in, &count);
 			free_input(&in);
 	}
-	
+
+	if(count_words == 1)
+		printf("%lld\n",count);
+	if(count_words == 2)
+		fprintf(stderr,"%lld\n",count);
+
 	return 0;
 }
