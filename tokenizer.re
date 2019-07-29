@@ -268,7 +268,7 @@ Cn = [\u0378-\u0379\u0380-\u0383\u038b-\u038b\u038d-\u038d\u03a2-\u03a2\u0530-\u
 	| (day [\-] month [\-] year) | (year [\-] month [\-] day) | (month [\-] day [\-] year);
 	
 	time = ([0-1]?[0-9] | "2" [0-3]) ":" [0-5][0-9] ("." [0-9]+)?; //TODO 16:52:36
-	
+	1
 	//extract names seraching for Mr Mrs Ms Dr Miss Sir Dear
 	// (Mr\.?|mr\.?|Mrs\.?|mrs\.?|Ms\.?|ms\.?|Dear|dear|Dr\.?|dr\.?|Sir|sir|Miss|miss)\s+[A-Z][a-z]+\s+([A-Z]\.\s+)?[A-Z][a-z]+
 	ISBN = "ISBN" " "+ ([0-9]{10} | [0-9][0-9\-]{11}[0-9Xx]); // todo X
@@ -440,8 +440,8 @@ void parse_flags(char *s)
 void help(char **argv)
 {
 	printf("%s: [OPTIONS] [INPUT_FILES]\n"
-	"        -a type1,type2,... accept only token types\n"
-	"        -r type1,type2,... reject token types\n"
+	"        -a type1,type2,... accept only selected token types\n"
+	"        -r type1,type2,... reject selected token types\n"
 	"        -w                 print word count\n"
 	"        -W                 print tokenization in stdout and word count in stderr\n" 
 	"valid token types: word, email, punct, num, date, symbol, uri, price, greek, other\n",argv[0]);
